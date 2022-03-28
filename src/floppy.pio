@@ -1,0 +1,52 @@
+//
+// To make the scheduling code less complex and avoid unnecessary alarm interrupts as well as bit-banging in C-code,
+// all pins connecting to the floppy drives (and their respective logic) are actually handled by PIO.
+//
+// Note: All lines are terminated by // because apparently the devs behind the lexer did not expect carriage-return
+// characters. In 2022. I know.
+//
+.define public NUM_PINS 10 //
+//
+.program floppy_multiplexer //
+.side_set 1 opt //
+//
+// wait for instructions by the scheduler
+pull side 0//
+//
+// a scheduled instruction contains the target drive index in the three lowest bits, and then three bit flags enabling up
+// to three additional drives for volume control. Each 0 in one of those flags enables an additional drive.
+// Example: 0b000101 will step 4 drives at index 5 forward. 0b111000 will step 1 drive at index 0 forward.
+// The next 4 bits are motor directions for all drives that could potentially move with this command.
+out pins, NUM_PINS side 1 //
+.wrap //
+//
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void floppy_pio_program_init(PIO pio, uint sm, uint offset, uint32_t first_pin, uint32_t side_pin) {
+    for (int i = first_pin; i < first_pin + NUM_PINS; ++i)
+        pio_gpio_init(pio, i);
+
+    pio_gpio_init(pio, side_pin);
+
+    // wrapping requires the program-specific configuration to handle the wrap registers
+    pio_sm_config config = floppy_multiplexer_program_get_default_config(offset);
+
+    sm_config_set_out_pins(&config, first_pin, NUM_PINS);
+    sm_config_set_out_shift(&config, true, false, 32);
+    sm_config_set_sideset_pins(&config, side_pin);
+
+    float div = (float)clock_get_hz(clk_sys) / (50000);
+    sm_config_set_clkdiv(&config, div);
+
+    pio_sm_set_consecutive_pindirs(pio, sm, first_pin, NUM_PINS, 1);
+    pio_sm_set_pindirs_with_mask(pio, sm, 1u << side_pin, 1u << side_pin);
+
+    pio_sm_init(pio, sm, offset, &config);
+    pio_sm_set_enabled(pio, sm, 1);
+}
+
+static inline void floppy_pio_exec(PIO pio, uint sm, uint32_t command) {
+    pio_sm_put_blocking(pio, sm, command);
+}
+%}
