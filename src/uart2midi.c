@@ -8,6 +8,9 @@
 
 #define MIDI_BAUD_RATE 31250
 
+/** Midi state machine for uart0 */
+MidiStateMachine midi_state;
+
 /**
  * Finalize the incomplete message by appending it to the midi message ring buffer, then reset the internal state to an
  * incomplete message (but keep the header, in case of Running Status).

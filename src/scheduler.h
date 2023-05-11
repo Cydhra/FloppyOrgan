@@ -1,8 +1,7 @@
-#include <sys/cdefs.h>
-
 #ifndef FLOPPYORGAN_SCHEDULER_H
 #define FLOPPYORGAN_SCHEDULER_H
 
+#include <sys/cdefs.h>
 #include <stdint.h>
 #include "pico/time.h"
 

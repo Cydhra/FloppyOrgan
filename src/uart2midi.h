@@ -29,9 +29,6 @@ typedef struct MidiStateMachine {
     uint8_t tail;
 } MidiStateMachine;
 
-/** Midi state machine for uart0 */
-MidiStateMachine midi_state;
-
 /**
  * Initialize a midi device on top of a given uart device
  *
