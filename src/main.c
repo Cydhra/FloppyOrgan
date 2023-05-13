@@ -34,25 +34,40 @@ _Noreturn void midi_simulation() {
 
     uart_set_irq_enables(uart1, true, false);
 
-    unsigned char notes[27] = {60, 62, 64, 65, 67, 67, 69, 69, 69, 69, 67, 69, 69, 69, 69, 67, 65, 65, 65, 65, 64, 64,
-                               62, 62, 62, 62, 60};
+    unsigned char notes[32] = {68, 60, 63, 65,68, 60, 63, 65,68, 60, 63, 65,68, 60, 63, 65,
+                               68, 60, 64, 65,68, 60, 64, 65,68, 60, 64, 65,68, 60, 64, 65,};
 
-    unsigned int speeds[27] = {500, 500, 500, 500, 1000, 1000, 500, 500, 500, 500, 2000, 500, 500, 500, 500, 2000, 500,
-                               500, 500, 500, 1000, 1000, 500, 500, 500, 500, 2000};
+    unsigned int speeds[32] = {500, 500, 250, 250,500, 500, 250, 250,500, 500, 250, 250,500, 500, 250, 250,
+                               500, 500, 250, 250,500, 500, 250, 250,500, 500, 250, 250,500, 500, 250, 250,};
 
+    static int OFFSET = 0;
 
-    int i = 0;
-    uart_start_note(notes[0] - 12);
+    int i = 1;
+    uart_start_note(notes[0]- OFFSET);
+    uart_start_note(60- OFFSET);
+    uart_start_note(55- OFFSET);
+    uart_start_note(48- OFFSET);
+
     sleep_ms(speeds[0]);
     while (true) {
-        uart_stop_note(notes[i] - 12);
+        uart_stop_note(notes[i - 1]- OFFSET);
+        if (i % 4 == 0) {
+            uart_stop_note(60- OFFSET);
+            uart_stop_note(55- OFFSET);
+            uart_stop_note(48- OFFSET);
+        }
         sleep_ms(50);
 
-        if (++i >= 27)
-            i = 0;
+        if (i == 32) i = 0;
 
-        uart_start_note(notes[i] - 12);
+        uart_start_note(notes[i]- OFFSET);
+        if (i % 4 == 0) {
+            uart_start_note(60- OFFSET);
+            uart_start_note(55- OFFSET);
+            uart_start_note(48- OFFSET);
+        }
         sleep_ms(speeds[i]);
+        i++;
     }
 }
 
