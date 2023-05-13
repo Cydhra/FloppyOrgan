@@ -77,6 +77,29 @@ int find_free_drive() {
 }
 
 /**
+ * Reset all motors to position 0
+ */
+void reset_motors() {
+    for (int index = 0; index < 8; index++) {
+        for (int i = 0; i < 80; i++) {
+            uint32_t multiplexed_command = 0;
+
+            // multiplex index
+            multiplexed_command |= index;
+
+            // volume flags (e.g.: a value of 7 will result in 3 extra-drives being played (as 7 is 111 in binary)
+            multiplexed_command |= (7 << 3);
+
+            // motor directions
+            uint32_t direction = 15 << (3 + MAX_DRIVES_PER_NOTE - 1);
+            multiplexed_command |= direction;
+
+            floppy_pio_exec(pio, PIO_STATE_MACHINE, multiplexed_command);
+        }
+    }
+}
+
+/**
  * Reset the internal drive state. This method assumes that the drives are already in neutral position, only the
  * internal state is reset.
  *
@@ -116,6 +139,7 @@ void init_scheduler(void) {
            PIO_SIDE_PIN);
 
     reset_floppy_register(&channel);
+    reset_motors();
 }
 
 void destroy_scheduler(void) {
@@ -221,8 +245,8 @@ _Noreturn void scheduler_loop(void) {
 
     while (true) {
         // status led blinking
-        gpio_put(LED_PIN, (status & 0xF0) > 0);
-        status = (status + 1) % 256;
+        gpio_put(LED_PIN, (status & 0x100000) > 0);
+        status = (status + 1);
 
         MidiMessage *message = try_read_midi();
 
